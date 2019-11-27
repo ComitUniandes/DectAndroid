@@ -1,13 +1,12 @@
 package actions;
 
-import com.intellij.notification.NotificationDisplayType;
-import com.intellij.notification.NotificationGroup;
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.application.Application;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.fileTypes.FileTypes;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiJavaFile;
-import com.intellij.psi.PsiManager;
+import com.intellij.psi.*;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +18,8 @@ import java.util.Objects;
 public class MyAction extends AnAction {
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-        NotificationGroup myplugin = new NotificationGroup("myplugin", NotificationDisplayType.BALLOON, true);
+        VirtualFile baseDir = e.getProject().getBaseDir();
+        final PsiDirectory projectDir = PsiManager.getInstance(e.getProject()).findDirectory(baseDir);
         Collection<VirtualFile> java = FilenameIndex.getAllFilesByExt(Objects.requireNonNull(e.getProject()), "java", GlobalSearchScope.projectScope(e.getProject()));
         Iterator<VirtualFile> iterator = java.iterator();
         StringBuilder output= new StringBuilder();
@@ -31,9 +31,14 @@ public class MyAction extends AnAction {
                 }
             }
         }
-        myplugin.createNotification("My Title",
-                output.toString(),
-                NotificationType.INFORMATION,
-                null).notify(e.getProject());
+        PsiFile fileFromText = PsiFileFactory.getInstance(e.getProject()).createFileFromText("myfile",FileTypes.PLAIN_TEXT, output);
+        PsiFile myfile = Objects.requireNonNull(projectDir).findFile("myfile");
+        Application application = ApplicationManager.getApplication();
+        application.runWriteAction(() -> {
+        if (myfile != null) {
+         myfile.delete();
+        }
+        Objects.requireNonNull(projectDir).add(fileFromText);
+        });
     }
 }
