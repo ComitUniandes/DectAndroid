@@ -19,7 +19,7 @@ public class MyAction extends AnAction {
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         VirtualFile baseDir = e.getProject().getBaseDir();
-        final PsiDirectory projectDir = PsiManager.getInstance(e.getProject()).findDirectory(baseDir);
+        final PsiDirectory projectDir = PsiManager.getInstance(e.getProject()).findDirectory(baseDir).findSubdirectory("assets");
         Collection<VirtualFile> java = FilenameIndex.getAllFilesByExt(Objects.requireNonNull(e.getProject()), "java", GlobalSearchScope.projectScope(e.getProject()));
         Iterator<VirtualFile> iterator = java.iterator();
         StringBuilder output= new StringBuilder();
@@ -29,6 +29,10 @@ public class MyAction extends AnAction {
                 for (int j = 0; j < javaFile.getClasses()[i].getMethods().length; j++) {
                     output.append(javaFile.getPackageName()).append(".").append(javaFile.getClasses()[i].getName()).append(".").append(javaFile.getClasses()[i].getMethods()[j].getName()).append(" \n");
                 }
+            }
+            for (int i = 0; i < Objects.requireNonNull(javaFile).getImportList().getAllImportStatements().length; i++) {
+                PsiImportStatementBase[] allImportStatements = Objects.requireNonNull(javaFile).getImportList().getAllImportStatements();
+                output.append(allImportStatements[i].getImportReference().getCanonicalText()).append(" \n");
             }
         }
         PsiFile fileFromText = PsiFileFactory.getInstance(e.getProject()).createFileFromText("myfile",FileTypes.PLAIN_TEXT, output);
