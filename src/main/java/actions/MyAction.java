@@ -11,6 +11,9 @@ import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
@@ -44,5 +47,21 @@ public class MyAction extends AnAction {
         }
         Objects.requireNonNull(projectDir).add(fileFromText);
         });
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.update(output.toString().getBytes());
+            byte[] digest = md.digest();
+            String myChecksum = String.format("%032x", new BigInteger(1, digest));
+            PsiFile md5FromText = PsiFileFactory.getInstance(e.getProject()).createFileFromText("mymd5",FileTypes.PLAIN_TEXT, myChecksum);
+            PsiFile mymd5 = Objects.requireNonNull(projectDir).findFile("mymd5");
+            application.runWriteAction(() -> {
+                if (mymd5 != null) {
+                    mymd5.delete();
+                }
+                Objects.requireNonNull(projectDir).add(md5FromText);
+            });
+        } catch (NoSuchAlgorithmException ex) {
+            ex.printStackTrace();
+        }
     }
 }
